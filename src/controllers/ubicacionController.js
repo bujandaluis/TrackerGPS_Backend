@@ -73,10 +73,53 @@ function crearUbicacion(req, res, next) {
   }
 }
 
+function obtenerHistorial(req, res, next) {
+  try {
+    if (req.query.historial !== 'true') {
+      return res.status(400).json({
+        success: false,
+        message: 'Use historial=true y los parámetros "desde" y "hasta" con fecha y hora (YYYY-MM-DD HH:mm:ss).',
+      });
+    }
+
+    const rango = resolverRangoHistorial(req.query.desde, req.query.hasta);
+
+    if (rango.error) {
+      return res.status(400).json({
+        success: false,
+        message: rango.error,
+      });
+    }
+
+    const resultado = ubicacionService.obtenerHistorialPorRango({
+      desde: rango.desde,
+      hasta: rango.hasta,
+    });
+
+    if (resultado.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'No se encontraron registros en el rango indicado.',
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: resultado,
+      filtro: {
+        zonaHoraria: TIMEZONE,
+        desde: rango.desde,
+        hasta: rango.hasta,
+      },
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
 function obtenerUbicacion(req, res, next) {
   try {
     const identificador = req.params.identificadorDispositivo?.trim();
-    const historial = req.query.historial === 'true';
 
     if (!identificador) {
       return res.status(400).json({
@@ -85,50 +128,19 @@ function obtenerUbicacion(req, res, next) {
       });
     }
 
-    let opciones = { historial };
+    const resultado = ubicacionService.obtenerPorIdentificador(identificador);
 
-    if (historial) {
-      const rango = resolverRangoHistorial(req.query.desde, req.query.hasta);
-
-      if (rango.error) {
-        return res.status(400).json({
-          success: false,
-          message: rango.error,
-        });
-      }
-
-      opciones = {
-        historial: true,
-        desde: rango.desde,
-        hasta: rango.hasta,
-      };
-    }
-
-    const resultado = ubicacionService.obtenerPorIdentificador(identificador, opciones);
-
-    if (!resultado || (Array.isArray(resultado) && resultado.length === 0)) {
+    if (!resultado) {
       return res.status(404).json({
         success: false,
-        message: historial
-          ? 'No se encontraron registros para el dispositivo en el rango indicado.'
-          : 'No se encontraron registros para el dispositivo indicado.',
+        message: 'No se encontraron registros para el dispositivo indicado.',
       });
     }
 
-    const respuesta = {
+    return res.status(200).json({
       success: true,
       data: resultado,
-    };
-
-    if (historial) {
-      respuesta.filtro = {
-        zonaHoraria: TIMEZONE,
-        desde: opciones.desde,
-        hasta: opciones.hasta,
-      };
-    }
-
-    return res.status(200).json(respuesta);
+    });
   } catch (error) {
     return next(error);
   }
@@ -136,5 +148,6 @@ function obtenerUbicacion(req, res, next) {
 
 module.exports = {
   crearUbicacion,
+  obtenerHistorial,
   obtenerUbicacion,
 };

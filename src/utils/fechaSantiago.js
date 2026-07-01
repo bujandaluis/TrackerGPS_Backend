@@ -32,8 +32,16 @@ function obtenerRangoDiaActualSantiago() {
 
   return {
     desde: `${fecha} 00:00:00`,
-    hasta: `${fecha} 23:59:59`,
+    hasta: formatEnSantiago(),
   };
+}
+
+function incluyeHora(valor) {
+  if (!valor || typeof valor !== 'string') {
+    return false;
+  }
+
+  return /(?:[ T]\d{2}:\d{2})/.test(decodeURIComponent(valor.trim().replace(/\+/g, ' ')));
 }
 
 function normalizarFechaHora(valor, { finDeDia = false } = {}) {
@@ -94,12 +102,18 @@ function resolverRangoHistorial(desde, hasta) {
 
   if (!desdeTexto || !hastaTexto) {
     return {
-      error: 'Debe enviar ambos parámetros "desde" y "hasta", o ninguno para usar el día actual.',
+      error: 'Debe enviar ambos parámetros "desde" y "hasta" con fecha y hora, o ninguno para usar el día actual.',
+    };
+  }
+
+  if (!incluyeHora(desdeTexto) || !incluyeHora(hastaTexto)) {
+    return {
+      error: 'Debe incluir fecha y hora en "desde" y "hasta". Formato: YYYY-MM-DD HH:mm:ss (zona America/Santiago).',
     };
   }
 
   const desdeNormalizado = normalizarFechaHora(desdeTexto);
-  const hastaNormalizado = normalizarFechaHora(hastaTexto, { finDeDia: !/\d{2}:\d{2}/.test(hastaTexto) });
+  const hastaNormalizado = normalizarFechaHora(hastaTexto);
 
   if (!desdeNormalizado || !hastaNormalizado) {
     return {

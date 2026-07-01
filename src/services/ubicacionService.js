@@ -19,7 +19,7 @@ const selectLatestStmt = db.prepare(`
   LIMIT 1
 `);
 
-const selectHistorialStmt = db.prepare(`
+const selectHistorialPorRangoStmt = db.prepare(`
   SELECT
     id,
     identificador_dispositivo AS identificadorDispositivo,
@@ -27,8 +27,7 @@ const selectHistorialStmt = db.prepare(`
     longitud,
     fecha_creacion AS fechaCreacion
   FROM ubicaciones
-  WHERE identificador_dispositivo = ?
-    AND fecha_creacion >= ?
+  WHERE fecha_creacion >= ?
     AND fecha_creacion <= ?
   ORDER BY fecha_creacion DESC, id DESC
 `);
@@ -61,18 +60,16 @@ function obtenerPorId(id) {
     .get(id);
 }
 
-function obtenerPorIdentificador(
-  identificadorDispositivo,
-  { historial = false, desde, hasta } = {},
-) {
-  if (historial) {
-    return selectHistorialStmt.all(identificadorDispositivo, desde, hasta);
-  }
-
+function obtenerPorIdentificador(identificadorDispositivo) {
   return selectLatestStmt.get(identificadorDispositivo) || null;
+}
+
+function obtenerHistorialPorRango({ desde, hasta }) {
+  return selectHistorialPorRangoStmt.all(desde, hasta);
 }
 
 module.exports = {
   guardarUbicacion,
   obtenerPorIdentificador,
+  obtenerHistorialPorRango,
 };
