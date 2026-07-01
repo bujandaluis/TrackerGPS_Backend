@@ -10,7 +10,7 @@
   "keywords": ["gps", "tracker", "express", "api"],
   "license": "ISC",
   "engines": {
-    "node": ">=20"
+    "node": "22.x"
   },
   "dependencies": {
     "better-sqlite3": "^11.9.0",
